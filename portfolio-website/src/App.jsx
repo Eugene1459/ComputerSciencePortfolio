@@ -106,6 +106,15 @@ function App() {
     <span>CSS</span>
   </div>
 
+<a
+  className="project-link"
+  href="https://computer-science-portfolio-five.vercel.app"
+  target="_blank"
+  rel="noopener noreferrer"
+>
+  Live Demo →
+</a>
+
   <a
   className="project-link"
   href="https://github.com/Eugene1459/ComputerSciencePortfolio/tree/main/portfolio-website"
