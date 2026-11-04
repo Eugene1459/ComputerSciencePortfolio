@@ -91,18 +91,30 @@ function App() {
   <div className="projects-grid">
 
     <div className="project-card">
-      <p className="project-status">In progress</p>
-      <h3>Developer Portfolio</h3>
-      <p>
-        A personal website showcasing my technical
-        skills, background and software projects.
-      </p>
-      <div className="project-tech">
-        <span>React</span>
-        <span>JavaScript</span>
-        <span>CSS</span>
-      </div>
-    </div>
+  <p className="project-status">Completed</p>
+
+  <h3>Developer Portfolio</h3>
+
+  <p>
+    A personal website showcasing my technical
+    skills, background and software projects.
+  </p>
+
+  <div className="project-tech">
+    <span>React</span>
+    <span>JavaScript</span>
+    <span>CSS</span>
+  </div>
+
+  <a
+  className="project-link"
+  href="https://github.com/Eugene1459/ComputerSciencePortfolio/tree/main/portfolio-website"
+  target="_blank"
+  rel="noopener noreferrer"
+>
+  View source code →
+</a>
+</div>
 
     <div className="project-card">
       <p className="project-status">Planned</p>

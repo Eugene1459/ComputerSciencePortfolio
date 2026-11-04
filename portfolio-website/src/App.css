@@ -281,3 +281,16 @@ footer {
   color: #0f172a;
   transform: translateY(-3px);
 }
+.project-link {
+  display: inline-block;
+  margin-top: 20px;
+  color: #38bdf8;
+  text-decoration: none;
+  font-weight: bold;
+  transition: color 0.3s ease;
+}
+
+.project-link:hover {
+  color: #7dd3fc;
+  text-decoration: underline;
+}
