@@ -3,7 +3,7 @@ import './App.css'
 function App() {
   return (
     <div className="app">
-      <nav className="navbar">
+      <nav className="navbar"aria-label="Main navigation">
         <h2 className="logo">Eugene<span>.</span></h2>
 
         <ul className="nav-links">
@@ -18,7 +18,7 @@ function App() {
       <main>
         <section className="hero" id="home">
           <p className="intro">HELLO, I'M</p>
-          <h1>Eugene, a Software Developer in Progress.</h1>
+          <h1>Computer Science Student | Aspiring Full-Stack Developer</h1>
           <p className="hero-description">
             I build practical web applications and enjoy solving
             problems through code.
@@ -28,27 +28,57 @@ function App() {
             Explore My Work
           </a>
         </section>
-
+        
         <section className="section" id="about">
-          <h2>About Me</h2>
-          <p>
-            I am a Computer Science student passionate about
-            software development, problem-solving and building
-            useful digital solutions.
-          </p>
-        </section>
+  <h2>About Me</h2>
 
-        <section className="section" id="skills">
-          <h2>Technical Skills</h2>
-          <div className="skills-list">
-            <span>Python</span>
-            <span>Java</span>
-            <span>JavaScript</span>
-            <span>HTML</span>
-            <span>CSS</span>
-            <span>React</span>
-          </div>
-        </section>
+  <p>
+    I am a Computer Science student with a strong interest
+    in full-stack software development. I enjoy turning
+    ideas into practical applications and solving problems
+    through clean, maintainable code.
+  </p>
+
+  <p>
+    I work with Python, Java and JavaScript, and I am
+    currently developing my skills in React, backend
+    development and database management.
+  </p>
+
+  <p>
+    My goal is to build reliable software solutions
+    while continuously improving my technical and
+    problem-solving abilities.
+  </p>
+</section>
+
+
+<section className="section" id="skills">
+  <h2>Technical Skills</h2>
+
+  <div className="skills-container">
+
+    <div className="skill-group">
+      <h3>Programming Languages</h3>
+      <div className="skills-list">
+        <span>Python</span>
+        <span>Java</span>
+        <span>JavaScript</span>
+      </div>
+    </div>
+
+    <div className="skill-group">
+      <h3>Frontend Development</h3>
+      <div className="skills-list">
+        <span>HTML</span>
+        <span>CSS</span>
+        <span>React</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
 
         <section className="section" id="projects">
   <h2>My Projects</h2>
@@ -105,13 +135,35 @@ function App() {
   </div>
 </section>
 
-        <section className="section" id="contact">
-          <h2>Contact Me</h2>
-          <p>Interested in working together? Get in touch.</p>
-          <a href="mailto:your-email@example.com">
-            Send me an email
-          </a>
-        </section>
+        
+<section className="section" id="contact">
+  <h2>Contact Me</h2>
+
+  <p>Interested in connecting? Feel free to reach out.</p>
+
+  <div className="social-links">
+    <a href="mailto:YOUR_EMAIL_ADDRESS">
+      Email Me
+    </a>
+
+    <a
+      href="https://github.com/Eugene1459"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      GitHub
+    </a>
+
+    <a
+      href="YOUR_LINKEDIN_PROFILE_URL"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      LinkedIn
+    </a>
+  </div>
+</section>
+
       </main>
 
       <footer>
