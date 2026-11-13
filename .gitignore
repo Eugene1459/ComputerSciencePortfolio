@@ -1,2 +1,8 @@
 
 /job-application-tracker/backend/venv/
+
+/job-application-tracker/backend/.env
+
+# Python cache files
+__pycache__/
+*.py[cod]
