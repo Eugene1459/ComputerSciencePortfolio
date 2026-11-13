@@ -6,3 +6,10 @@
 # Python cache files
 __pycache__/
 *.py[cod]
+
+# Local databases
+/job-application-tracker/backend/*.sqlite3
+
+# Python cache files
+__pycache__/
+*.py[cod]
