@@ -29,3 +29,4 @@ backend/venv/
 # Python generated files
 __pycache__/
 *.py[cod]
+/src/App.backup.jsx
