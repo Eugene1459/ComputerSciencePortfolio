@@ -1,25 +1,142 @@
+
 import { useEffect, useRef, useState } from 'react';
 import './App.css';
 
+const API_BASE_URL = 'http://127.0.0.1:8000/api/';
+
 function App() {
+  // =========================
+  // AUTHENTICATION STATE
+  // =========================
+
+  const [token, setToken] = useState(
+    () => sessionStorage.getItem('authToken')
+  );
+
+  const [authMode, setAuthMode] = useState('login');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
+
+  const [authData, setAuthData] = useState({
+    username: '',
+    email: '',
+    password: '',
+  });
+
+  // Handles login and registration
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault();
+
+    setAuthLoading(true);
+    setAuthError('');
+
+    const isRegistering = authMode === 'register';
+
+    const endpoint = isRegistering
+      ? 'register/'
+      : 'token-auth/';
+
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(
+          isRegistering
+            ? authData
+            : {
+                username: authData.username,
+                password: authData.password,
+              }
+        ),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const message = Object.values(data)
+          .flat()
+          .join(' ');
+
+        throw new Error(message || 'Authentication failed.');
+      }
+
+      if (isRegistering) {
+        setAuthMode('login');
+
+        setAuthData({
+          username: authData.username,
+          email: '',
+          password: '',
+        });
+
+        setAuthError(
+          'Account created successfully. Please log in.'
+        );
+      } else {
+        sessionStorage.setItem('authToken', data.token);
+        setToken(data.token);
+
+        setAuthData({
+          username: '',
+          email: '',
+          password: '',
+        });
+      }
+    } catch (err) {
+      setAuthError(err.message);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // Clears an invalid or expired session
+  const handleUnauthorized = () => {
+    sessionStorage.removeItem('authToken');
+    setToken(null);
+    setApplications([]);
+    setError('Your session has expired. Please log in again.');
+  };
+
+  // Handles logout
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API_BASE_URL}logout/`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Token ${token}`,
+        },
+      });
+    } catch (err) {
+      console.error('Logout request failed:', err);
+    } finally {
+      sessionStorage.removeItem('authToken');
+      setToken(null);
+      setApplications([]);
+      setShowForm(false);
+      resetForm();
+
+      setAuthMode('login');
+      setAuthError('');
+    }
+  };
+
+  // =========================
+  // APPLICATION STATE
+  // =========================
+
   const [applications, setApplications] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortOrder, setSortOrder] = useState('newest');
 
-  // Reference to the application form for automatic scrolling
   const formRef = useRef(null);
 
-  // Controls whether the application form is visible
   const [showForm, setShowForm] = useState(false);
-
-  // Stores errors when loading, saving, updating or deleting
   const [error, setError] = useState('');
-
-  // Stores the ID of the application currently being edited
   const [editingId, setEditingId] = useState(null);
 
-  // Stores the information entered into the form
   const [formData, setFormData] = useState({
     company_name: '',
     job_title: '',
@@ -31,7 +148,7 @@ function App() {
     notes: '',
   });
 
-  // Resets the form to its initial state
+  // Resets the application form
   const resetForm = () => {
     setFormData({
       company_name: '',
@@ -48,27 +165,49 @@ function App() {
     setError('');
   };
 
-  // Fetch applications from the Django backend
+  // =========================
+  // FETCH APPLICATIONS
+  // =========================
+
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/api/applications/')
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Failed to fetch applications');
+    if (!token) {
+      setApplications([]);
+      return;
+    }
+
+    const fetchApplications = async () => {
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}applications/`,
+          {
+            headers: {
+              Authorization: `Token ${token}`,
+            },
+          }
+        );
+
+        if (response.status === 401) {
+          handleUnauthorized();
+          return;
         }
 
-        return response.json();
-      })
-      .then(data => {
-        setApplications(data);
-      })
-      .catch(error => {
-        console.error('Error fetching applications:', error);
-        setError('Could not load applications. Please try again.');
-      });
-  }, []);
+        if (!response.ok) {
+          throw new Error('Failed to fetch applications.');
+        }
 
-  // Automatically scroll to the form when it opens
-  // or when an application is selected for editing
+        const data = await response.json();
+        setApplications(data);
+        setError('');
+      } catch (err) {
+        console.error('Error fetching applications:', err);
+        setError('Could not load applications. Please try again.');
+      }
+    };
+
+    fetchApplications();
+  }, [token]);
+
+  // Scroll to the application form when it opens
   useEffect(() => {
     if (showForm && formRef.current) {
       formRef.current.scrollIntoView({
@@ -78,7 +217,10 @@ function App() {
     }
   }, [showForm, editingId]);
 
-  // Opens the form with the selected application's information
+  // =========================
+  // EDIT APPLICATION
+  // =========================
+
   const handleEdit = (app) => {
     setEditingId(app.id);
 
@@ -97,21 +239,25 @@ function App() {
     setShowForm(true);
   };
 
-  // Adds a new application or updates an existing one
+  // =========================
+  // ADD OR UPDATE APPLICATION
+  // =========================
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const isEditing = editingId !== null;
 
     const url = isEditing
-      ? `http://127.0.0.1:8000/api/applications/${editingId}/`
-      : 'http://127.0.0.1:8000/api/applications/';
+      ? `${API_BASE_URL}applications/${editingId}/`
+      : `${API_BASE_URL}applications/`;
 
     try {
       const response = await fetch(url, {
         method: isEditing ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Token ${token}`,
         },
         body: JSON.stringify({
           ...formData,
@@ -119,26 +265,29 @@ function App() {
         }),
       });
 
+      if (response.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
       if (!response.ok) {
         throw new Error(
           isEditing
-            ? 'Failed to update application'
-            : 'Failed to save application'
+            ? 'Failed to update application.'
+            : 'Failed to save application.'
         );
       }
 
       const savedApplication = await response.json();
 
       if (isEditing) {
-        // Replace the old application with the updated one
-        setApplications(previous =>
-          previous.map(app =>
+        setApplications((previous) =>
+          previous.map((app) =>
             app.id === editingId ? savedApplication : app
           )
         );
       } else {
-        // Add the new application to the beginning of the list
-        setApplications(previous => [
+        setApplications((previous) => [
           savedApplication,
           ...previous,
         ]);
@@ -146,7 +295,6 @@ function App() {
 
       resetForm();
       setShowForm(false);
-
     } catch (err) {
       console.error(err);
 
@@ -158,7 +306,10 @@ function App() {
     }
   };
 
-  // Deletes an application after user confirmation
+  // =========================
+  // DELETE APPLICATION
+  // =========================
+
   const handleDelete = async (id) => {
     const confirmed = window.confirm(
       'Are you sure you want to delete this application?'
@@ -170,43 +321,51 @@ function App() {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/api/applications/${id}/`,
+        `${API_BASE_URL}applications/${id}/`,
         {
           method: 'DELETE',
+          headers: {
+            Authorization: `Token ${token}`,
+          },
         }
       );
 
-      if (!response.ok) {
-        throw new Error('Failed to delete application');
+      if (response.status === 401) {
+        handleUnauthorized();
+        return;
       }
 
-      // Remove the deleted application from the list
-      setApplications(previous =>
-        previous.filter(app => app.id !== id)
+      if (!response.ok) {
+        throw new Error('Failed to delete application.');
+      }
+
+      setApplications((previous) =>
+        previous.filter((app) => app.id !== id)
       );
 
-      // Close the form if the deleted application was being edited
       if (editingId === id) {
         resetForm();
         setShowForm(false);
       } else {
         setError('');
       }
-
     } catch (err) {
       console.error(err);
       setError('Could not delete application. Please try again.');
     }
   };
 
-  // Closes the form and clears any existing form data
+  // Close the form
   const handleCancel = () => {
     resetForm();
     setShowForm(false);
   };
 
-  // Search and filter applications
-  const filteredApplications = applications.filter(app => {
+  // =========================
+  // SEARCH, FILTER AND SORT
+  // =========================
+
+  const filteredApplications = applications.filter((app) => {
     const search = searchTerm.toLowerCase().trim();
 
     const matchesSearch =
@@ -219,7 +378,6 @@ function App() {
     return matchesSearch && matchesStatus;
   });
 
-  // Sort applications by application date
   const sortedApplications = [...filteredApplications].sort((a, b) => {
     const dateA = new Date(a.application_date);
     const dateB = new Date(b.application_date);
@@ -230,7 +388,11 @@ function App() {
 
     return dateA - dateB;
   });
-    // Get today's date using the user's local calendar date
+
+  // =========================
+  // FOLLOW-UP REMINDERS
+  // =========================
+
   const today = (() => {
     const date = new Date();
 
@@ -241,13 +403,12 @@ function App() {
     return `${year}-${month}-${day}`;
   })();
 
-  // Find applications that need follow-up
   const reminderApplications = applications
-    .filter(app =>
+    .filter((app) =>
       ['Applied', 'Interview'].includes(app.status) &&
       app.follow_up_date
     )
-    .map(app => {
+    .map((app) => {
       let reminderStatus = 'upcoming';
 
       if (app.follow_up_date < today) {
@@ -265,10 +426,18 @@ function App() {
       a.follow_up_date.localeCompare(b.follow_up_date)
     );
 
-  // Calculate application statistics for the analytics section
-  const statusSummary = ['Applied', 'Interview', 'Offer', 'Rejected'].map(status => {
+  // =========================
+  // APPLICATION ANALYTICS
+  // =========================
+
+  const statusSummary = [
+    'Applied',
+    'Interview',
+    'Offer',
+    'Rejected',
+  ].map((status) => {
     const count = applications.filter(
-      app => app.status === status
+      (app) => app.status === status
     ).length;
 
     const percentage = applications.length > 0
@@ -281,6 +450,105 @@ function App() {
       percentage,
     };
   });
+
+  // =========================
+  // LOGIN AND REGISTRATION SCREEN
+  // =========================
+
+  if (!token) {
+    return (
+      <div className="auth-container">
+        <div className="auth-card">
+          <h1>JobTracker</h1>
+
+          <p>
+            {authMode === 'login'
+              ? 'Welcome back! Log in to continue.'
+              : 'Create an account to get started.'}
+          </p>
+
+          {authError && (
+            <p className="auth-error">{authError}</p>
+          )}
+
+          <form onSubmit={handleAuthSubmit}>
+            <input
+              type="text"
+              placeholder="Username"
+              value={authData.username}
+              onChange={(e) =>
+                setAuthData({
+                  ...authData,
+                  username: e.target.value,
+                })
+              }
+              required
+            />
+
+            {authMode === 'register' && (
+              <input
+                type="email"
+                placeholder="Email address"
+                value={authData.email}
+                onChange={(e) =>
+                  setAuthData({
+                    ...authData,
+                    email: e.target.value,
+                  })
+                }
+                required
+              />
+            )}
+
+            <input
+              type="password"
+              placeholder="Password"
+              value={authData.password}
+              onChange={(e) =>
+                setAuthData({
+                  ...authData,
+                  password: e.target.value,
+                })
+              }
+              minLength={8}
+              required
+            />
+
+            <button type="submit" disabled={authLoading}>
+              {authLoading
+                ? 'Please wait...'
+                : authMode === 'login'
+                  ? 'Log In'
+                  : 'Create Account'}
+            </button>
+          </form>
+
+          <p className="auth-switch">
+            {authMode === 'login'
+              ? "Don't have an account?"
+              : 'Already have an account?'}
+            {' '}
+
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMode(
+                  authMode === 'login' ? 'register' : 'login'
+                );
+                setAuthError('');
+              }}
+            >
+              {authMode === 'login' ? 'Register' : 'Log In'}
+            </button>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================
+  // MAIN DASHBOARD
+  // =========================
 
   return (
     <div className="app-container">
@@ -305,19 +573,28 @@ function App() {
             <p>Welcome back! Here's your job search overview.</p>
           </div>
 
-          <button
-            className="add-button"
-            onClick={() => {
-              if (showForm) {
-                handleCancel();
-              } else {
-                resetForm();
-                setShowForm(true);
-              }
-            }}
-          >
-            {showForm ? 'Cancel' : '+ Add Application'}
-          </button>
+          <div>
+            <button
+              className="add-button"
+              onClick={() => {
+                if (showForm) {
+                  handleCancel();
+                } else {
+                  resetForm();
+                  setShowForm(true);
+                }
+              }}
+            >
+              {showForm ? 'Cancel' : '+ Add Application'}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+            >
+              Log Out
+            </button>
+          </div>
         </header>
 
         {/* Display errors */}
@@ -464,7 +741,7 @@ function App() {
             <h3>Interviews</h3>
             <p>
               {applications.filter(
-                app => app.status === 'Interview'
+                (app) => app.status === 'Interview'
               ).length}
             </p>
           </div>
@@ -473,7 +750,7 @@ function App() {
             <h3>Offers</h3>
             <p>
               {applications.filter(
-                app => app.status === 'Offer'
+                (app) => app.status === 'Offer'
               ).length}
             </p>
           </div>
@@ -482,12 +759,13 @@ function App() {
             <h3>Rejected</h3>
             <p>
               {applications.filter(
-                app => app.status === 'Rejected'
+                (app) => app.status === 'Rejected'
               ).length}
             </p>
           </div>
         </section>
-                {/* Follow-up Reminders */}
+
+        {/* Follow-up Reminders */}
         <section className="reminders-section">
           <h2>Follow-up Reminders</h2>
 
@@ -501,7 +779,7 @@ function App() {
             </p>
           ) : (
             <div className="reminders-list">
-              {reminderApplications.map(app => (
+              {reminderApplications.map((app) => (
                 <div
                   className={`reminder-item reminder-${app.reminderStatus}`}
                   key={app.id}
@@ -550,7 +828,7 @@ function App() {
           </p>
 
           <div className="analytics-list">
-            {statusSummary.map(item => (
+            {statusSummary.map((item) => (
               <div className="analytics-item" key={item.status}>
                 <div className="analytics-heading">
                   <span>{item.status}</span>
@@ -621,7 +899,7 @@ function App() {
           ) : (
             <div className="application-list">
 
-              {sortedApplications.map(app => (
+              {sortedApplications.map((app) => (
 
                 <div
                   className="application-item"

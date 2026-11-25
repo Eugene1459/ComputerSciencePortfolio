@@ -5,12 +5,10 @@ from django.utils import timezone
 
 class JobApplication(models.Model):
     owner = models.ForeignKey(
-        'auth.User',
-        on_delete=models.CASCADE,
-        related_name='job_applications',
-        null=True,
-        blank=True,
-    )
+    'auth.User',
+    on_delete=models.CASCADE,
+    related_name='job_applications',
+)
 
     STATUS_CHOICES = [
         ("Applied", "Applied"),
